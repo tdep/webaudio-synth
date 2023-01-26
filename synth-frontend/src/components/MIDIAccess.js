@@ -1,14 +1,18 @@
 const MIDIAccess = () => {
+  
   window.AudioContext = window.AudioContext || window.webkitAudioContext; //define the AudioContext for Chrome and webkit for mozilla
-  let ctx; //set global access to context which can change depending on the browser
-
+  let ctx; //set global access to context which can change depending on the browse
   const startButton = document.querySelector('button'); //button to permit audio output in Chrome
-  const oscillators = {} //stores the active oscillators in a global variable
-
   startButton.addEventListener('click', () => {
     ctx = new AudioContext(); //start the AudioContext (permit sound to play in the browser)
     // console.log(ctx)
   })
+  
+  let num = 0
+  const oscillators = {} //stores the active oscillators in a global variable
+  const waveforms = ['sine', 'square', 'sawtooth', 'triangle']
+  let waveform = waveforms[0]
+
 
   function midiToFreq(number) { //convert the midi number to Hz
     const a = 440; //reference note
@@ -24,30 +28,47 @@ const MIDIAccess = () => {
     midiAccess.onstatechange = updateDevices; // check the number of devices (onstatechange is an event listener)
     // midiAccess.addEventListener('statechange', updateDevices) // same as the above
     const inputs = midiAccess.inputs;
-
-    inputs.forEach((input) => {
+    // console.log(inputs)
+    inputs.forEach((input) => {//selects the input device
       // console.log(input)
       // input.onmidimessage = handleInput; //onmidimessage is an event listener
       input.addEventListener('midimessage', handleInput)
     })
   }
 
-  function handleInput(input) { //grabs the midi message for tracking all midi events
-    const command = input.data[0];
-    const note = input.data[1];
-    const velocity = input.data[2]
+  function waveformSelect(num) { //sets c10 to change waveform
+    console.log(waveform) 
+    waveform = waveforms[num]
+  }
 
+  function handleInput(input) { //grabs the midi message for tracking all midi events
+    // console.log(input)
+    const command = input.data[0];
+    const channel = input.data[1];
+    const velocity = input.data[2]
+    // console.log(channel)
     switch (command){
       case 145: //note is on
       if (velocity > 0) {
-        noteOn(note, velocity);//note is on
+        noteOn(channel, velocity);//note is on
       } else {
-        noteOff(note)//note is off
+        noteOff(channel)//note is off
       }
       break;
       case 129: //note is off
-        noteOff(note)//note is off
+        noteOff(channel)//note is off
         break;
+      case 177:
+        if (channel === 32) {
+          if (num < 4) { 
+            waveformSelect(num)
+            num += 1
+
+          } else {
+            num = 0
+            waveformSelect(num)
+          }
+        }
     }
   }
 
@@ -62,7 +83,7 @@ const MIDIAccess = () => {
     const velocityGain = ctx.createGain(); //create another gain element for velocity
     velocityGain.gain.value = velocityGainAmount // set the velocity gain to the converted number
     
-    osc.type = 'sine';
+    osc.type = waveform;
     osc.frequency.value = midiToFreq(note);
     
     //CONNECTIONS
@@ -102,6 +123,7 @@ const MIDIAccess = () => {
   function failure() {
     console.log('Could not connect MIDI')
   }
+
 }
 
 export default MIDIAccess
