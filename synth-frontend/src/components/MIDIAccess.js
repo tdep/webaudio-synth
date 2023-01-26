@@ -1,5 +1,7 @@
 const MIDIAccess = () => {
-  
+  //
+  //Get access to and initialize the AudioContext
+  //
   window.AudioContext = window.AudioContext || window.webkitAudioContext; //define the AudioContext for Chrome and webkit for mozilla
   let ctx; //set global access to context which can change depending on the browse
   const startButton = document.querySelector('button'); //button to permit audio output in Chrome
@@ -8,21 +10,33 @@ const MIDIAccess = () => {
     // console.log(ctx)
   })
   
+  //
+  //Global variables
+  //
   let num = 0
   const oscillators = {} //stores the active oscillators in a global variable
   const waveforms = ['sine', 'square', 'sawtooth', 'triangle']
   let waveform = waveforms[0]
+  let globalGain = 0.33
 
-
+  //
+  //Translate midi channel to Hz
+  //
   function midiToFreq(number) { //convert the midi number to Hz
     const a = 440; //reference note
     return (a / 32) * (2 ** ((number - 9) / 12)) //bring the reference note down 6 octaves, change not to C, double frquency divided by 12 steps to equal the correct pitch
   }
 
+  //
+  //Run the synth
+  //
   if (navigator.requestMIDIAccess) { //check if this is an object that exists
     navigator.requestMIDIAccess().then(success, failure) //if it exists, then run success, else run failure
   }
 
+  //
+  //Grab MIDI events from the browser if we have access
+  //
   function success(midiAccess) {
     // console.log(midiAccess);
     midiAccess.onstatechange = updateDevices; // check the number of devices (onstatechange is an event listener)
@@ -36,11 +50,23 @@ const MIDIAccess = () => {
     })
   }
 
+  //
+  //Select the waveform for the oscillator
+  //
   function waveformSelect(num) { //sets c10 to change waveform
     console.log(waveform) 
     waveform = waveforms[num]
   }
 
+  function volumeController(velocity) {
+    const velocityToGain = 0.0026 * velocity // maximum gain is 1/3 of total gain
+    globalGain = velocityToGain
+    console.log(globalGain)
+  }
+
+  //
+  //Handle all of the MIDI input messages
+  //
   function handleInput(input) { //grabs the midi message for tracking all midi events
     // console.log(input)
     const command = input.data[0];
@@ -48,36 +74,43 @@ const MIDIAccess = () => {
     const velocity = input.data[2]
     // console.log(channel)
     switch (command){
-      case 145: //note is on
+      case 145: // key press
       if (velocity > 0) {
         noteOn(channel, velocity);//note is on
       } else {
         noteOff(channel)//note is off
       }
       break;
-      case 129: //note is off
+      case 129: // key release
         noteOff(channel)//note is off
         break;
-      case 177:
-        if (channel === 32) {
-          if (num < 4) { 
+      case 177: //transport / modwheel / function knobs / volume 
+        if (channel === 32) { // waveform selector => c10
+          if (num < 4) {  // refer to waveforms array
             waveformSelect(num)
             num += 1
-
           } else {
             num = 0
             waveformSelect(num)
           }
         }
+        if (channel === 20) { // volume control
+          volumeController(velocity)
+        }
+        break
+      
     }
   }
 
+  //
+  //Setup the oscillator
+  //
   function noteOn(note, velocity) { //handle the note on event
     // console.log(note, velocity)
     const osc = ctx.createOscillator();
     
     const oscGain = ctx.createGain(); //create the gain element for the overall sound
-    oscGain.gain.value = 0.33; // set the default gain to be 1/3 of total gain
+    oscGain.gain.value = globalGain; // set the default gain to be 1/3 of total gain
     
     const velocityGainAmount = (1 / 127) * velocity; // convert the velocity to a number between 0 and 1 to use for gain
     const velocityGain = ctx.createGain(); //create another gain element for velocity
@@ -99,6 +132,9 @@ const MIDIAccess = () => {
     
   }
 
+  //
+  //disengage the oscillator
+  //
   function noteOff(note) { //handle the note off event
     // console.log(note) //why does this trigger 5 times?
     const osc = oscillators[note.toString()]; //logs the target oscillators globally
@@ -116,10 +152,17 @@ const MIDIAccess = () => {
     // console.log(oscillators)
   }
 
+  //
+  //list all of the available devices
+  //
   function updateDevices(event) {
     // console.log(event);
     console.log(`Name: ${event.port.name}, Brand: ${event.port.manufacturer}, State: ${event.port.state}, Type: ${event.port.type}`)
   }
+
+  //
+  //if we do not have access to the MIDI
+  //
   function failure() {
     console.log('Could not connect MIDI')
   }
