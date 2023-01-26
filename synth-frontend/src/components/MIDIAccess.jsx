@@ -1,18 +1,14 @@
-import { useState } from "react";
-
 const MIDIAccess = () => {
-
-  const [overlay, setOverlay] = useState('block')
   //
   //Get access to and initialize the AudioContext
   //
   window.AudioContext = window.AudioContext || window.webkitAudioContext; //define the AudioContext for Chrome and webkit for mozilla
   let ctx; //set global access to context which can change depending on the browse
-  const startButton = document.getElementById('overlay'); //button to permit audio output in Chrome
+  const startButton = document.querySelector('button'); //button to permit audio output in Chrome
   startButton.addEventListener('click', () => {
-    startButton.style.display="none"
+    // startButton.style.display="none"
     ctx = new AudioContext(); //start the AudioContext (permit sound to play in the browser)
-    // console.log(ctx)
+    console.log(ctx)
   })
   
   //

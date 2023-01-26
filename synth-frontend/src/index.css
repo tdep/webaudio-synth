@@ -1,3 +1,8 @@
+.synth {
+  display: flex
+  
+}
+
 #overlay {
   position: fixed; /*Sit on to of the page content*/
   display: block;
@@ -19,4 +24,13 @@
   color: white;
   transform: translate(-50%, -50%);
   -ms-transform: translate(-50%, -50%);
+}
+
+#case {
+  position: fixed;
+  display: inline;
+  width: 60%;
+  min-height: 400px;
+  height: 60%;
+  border: 1px black solid
 }
