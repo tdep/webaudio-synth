@@ -1,13 +1,26 @@
+import Interface from "./Interface";
+
 const MIDIAccess = () => {
   //
   //Get access to and initialize the AudioContext
   //
   window.AudioContext = window.AudioContext || window.webkitAudioContext; //define the AudioContext for Chrome and webkit for mozilla
   let ctx; //set global access to context which can change depending on the browse
+  let analyser
+  let canvasCtx
+  let dataArray
+  let sliceWidth
+  let bufferLength
+  let WIDTH
+  let HEIGHT
+  let drawVisual
+
   const startButton = document.querySelector('button'); //button to permit audio output in Chrome
   startButton.addEventListener('click', () => {
     // startButton.style.display="none"
     ctx = new AudioContext(); //start the AudioContext (permit sound to play in the browser)
+    visualizer()
+    draw()
     console.log(ctx)
   })
   
@@ -22,6 +35,53 @@ const MIDIAccess = () => {
   let filterType = "lowpass" 
   let lowPassFreq = 200
   let lfoFreq = 0
+  
+
+  //
+  //Create visualizer
+  //
+ function visualizer() {
+   analyser = ctx.createAnalyser();
+   analyser.fftsize = 2048;
+   bufferLength = analyser.frequencyBinCount;
+   dataArray = new Uint8Array(bufferLength)
+   
+   const canvas = document.getElementById("canvas")
+   canvasCtx = canvas.getContext("2d")
+   HEIGHT = 200
+   WIDTH = 600
+   canvasCtx.clearRect(0, 0, WIDTH, HEIGHT)
+  }
+  
+  function draw() {
+    drawVisual = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(dataArray)
+    canvasCtx.fillStyle = "rgb(200, 200, 200)"
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT)
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeStyle = "rgb(0, 0, 0)";
+    canvasCtx.beginPath();
+    sliceWidth = WIDTH / bufferLength;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = v * (HEIGHT / 2);
+
+      if (i === 0) {
+        canvasCtx.moveTo(x, y);
+      } else {
+        canvasCtx.lineTo(x, y);
+      }
+
+      x += sliceWidth;
+    }
+
+    canvasCtx.lineTo(WIDTH, HEIGHT / 2);
+    canvasCtx.stroke();
+  }
+
+
+
 
   //
   //Translate midi channel to Hz
@@ -148,9 +208,10 @@ const MIDIAccess = () => {
     // osc.frequency.value = lfoFreq
     
     //CONNECTIONS
-    osc.connect(biquadFilter)
-    biquadFilter.connect(oscGain);
-    oscGain.connect(velocityGain)
+    osc.connect(biquadFilter);
+    biquadFilter.connect(analyser);
+    analyser.connect(oscGain);
+    oscGain.connect(velocityGain);
     velocityGain.connect(ctx.destination);
     
     osc.gain = oscGain // creates a custom property on the osc object grabbing the gainNode

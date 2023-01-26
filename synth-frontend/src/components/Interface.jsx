@@ -1,5 +1,7 @@
 const Interface = () => {
 
+
+
   return (
     <div id="case">
       <div id="upper-container">
