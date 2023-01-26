@@ -1,3 +1,5 @@
+import { Scale } from "tone";
+
 const MIDIAccess = () => {
   //
   //Get access to and initialize the AudioContext
@@ -18,6 +20,9 @@ const MIDIAccess = () => {
   const waveforms = ['sine', 'square', 'sawtooth', 'triangle']
   let waveform = waveforms[0]
   let globalGain = 0.33
+  let filterType = "lowpass" 
+  let lowPassFreq = 200
+  let lfoFreq = 0
 
   //
   //Translate midi channel to Hz
@@ -59,9 +64,19 @@ const MIDIAccess = () => {
   }
 
   function volumeController(velocity) {
-    const velocityToGain = 0.0026 * velocity // maximum gain is 1/3 of total gain
+    const velocityToGain = (1 / 127) * velocity // maximum gain is 1/3 of total gain 0.0026
     globalGain = velocityToGain
     console.log(globalGain)
+    return velocityToGain
+  }
+
+  function lowPassFreqControll(velocity) {
+    lowPassFreq = (((velocity / 127) * 15000) + 200).toFixed(4)
+  }
+
+  function lfoControl(velocity) {
+    lfoFreq = (((velocity / 127) * 20) + 1)
+    console.log(lfoFreq)
   }
 
   //
@@ -97,6 +112,12 @@ const MIDIAccess = () => {
         if (channel === 20) { // volume control
           volumeController(velocity)
         }
+        if (channel === 71) (
+          lowPassFreqControll(velocity)
+        )
+        if (channel === 72) (
+          lfoControl(velocity)
+        )
         break
       
     }
@@ -108,20 +129,29 @@ const MIDIAccess = () => {
   function noteOn(note, velocity) { //handle the note on event
     // console.log(note, velocity)
     const osc = ctx.createOscillator();
+    // const osc2 = ctx.createOscillator();
     
     const oscGain = ctx.createGain(); //create the gain element for the overall sound
-    oscGain.gain.value = globalGain; // set the default gain to be 1/3 of total gain
+    oscGain.gain.value = globalGain; // set total gain to be equal to global gain variable
     
     const velocityGainAmount = (1 / 127) * velocity; // convert the velocity to a number between 0 and 1 to use for gain
     const velocityGain = ctx.createGain(); //create another gain element for velocity
     velocityGain.gain.value = velocityGainAmount // set the velocity gain to the converted number
     
-    osc.type = waveform;
+    const biquadFilter = ctx.createBiquadFilter();
+    biquadFilter.type = filterType
+    biquadFilter.frequency.value = lowPassFreq
+
+    osc.type = waveform; // set the waveform to the global waveform variable
     osc.frequency.value = midiToFreq(note);
+
+    // osc2.type = 'square'
+    // osc.frequency.value = lfoFreq
     
     //CONNECTIONS
-    osc.connect(oscGain);
-    oscGain.connect(velocityGain)
+    osc.connect(oscGain)
+    oscGain.connect(biquadFilter)
+    biquadFilter.connect(velocityGain);
     velocityGain.connect(ctx.destination);
     
     osc.gain = oscGain // creates a custom property on the osc object grabbing the gainNode
