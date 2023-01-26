@@ -1,13 +1,16 @@
-import { Scale } from "tone";
+import { useState } from "react";
 
 const MIDIAccess = () => {
+
+  const [overlay, setOverlay] = useState('block')
   //
   //Get access to and initialize the AudioContext
   //
   window.AudioContext = window.AudioContext || window.webkitAudioContext; //define the AudioContext for Chrome and webkit for mozilla
   let ctx; //set global access to context which can change depending on the browse
-  const startButton = document.querySelector('button'); //button to permit audio output in Chrome
+  const startButton = document.getElementById('overlay'); //button to permit audio output in Chrome
   startButton.addEventListener('click', () => {
+    startButton.style.display="none"
     ctx = new AudioContext(); //start the AudioContext (permit sound to play in the browser)
     // console.log(ctx)
   })
@@ -64,7 +67,7 @@ const MIDIAccess = () => {
   }
 
   function volumeController(velocity) {
-    const velocityToGain = (1 / 127) * velocity // maximum gain is 1/3 of total gain 0.0026
+    let velocityToGain = (1 / 127) * velocity // maximum gain is 1/3 of total gain 0.0026
     globalGain = velocityToGain
     console.log(globalGain)
     return velocityToGain
@@ -112,7 +115,7 @@ const MIDIAccess = () => {
         if (channel === 20) { // volume control
           volumeController(velocity)
         }
-        if (channel === 71) (
+        if (channel === 1) ( //lowpass filter
           lowPassFreqControll(velocity)
         )
         if (channel === 72) (
@@ -149,9 +152,9 @@ const MIDIAccess = () => {
     // osc.frequency.value = lfoFreq
     
     //CONNECTIONS
-    osc.connect(oscGain)
-    oscGain.connect(biquadFilter)
-    biquadFilter.connect(velocityGain);
+    osc.connect(biquadFilter)
+    biquadFilter.connect(oscGain);
+    oscGain.connect(velocityGain)
     velocityGain.connect(ctx.destination);
     
     osc.gain = oscGain // creates a custom property on the osc object grabbing the gainNode
@@ -194,9 +197,8 @@ const MIDIAccess = () => {
   //if we do not have access to the MIDI
   //
   function failure() {
-    console.log('Could not connect MIDI')
+   console.log('Could not connect MIDI')
   }
-
 }
 
 export default MIDIAccess
