@@ -1,6 +1,6 @@
-import Interface from "./Interface";
+import { useState, useEffect } from "react";
 
-const MIDIAccess = () => {
+const MIDIAccess = ({}) => {
   //
   //Get access to and initialize the AudioContext
   //
@@ -11,9 +11,11 @@ const MIDIAccess = () => {
   let dataArray
   let sliceWidth
   let bufferLength
+  let intendedWidth
   let WIDTH
   let HEIGHT
   let drawVisual
+
 
   const startButton = document.querySelector('button'); //button to permit audio output in Chrome
   startButton.addEventListener('click', () => {
@@ -48,18 +50,23 @@ const MIDIAccess = () => {
    
    const canvas = document.getElementById("canvas")
    canvasCtx = canvas.getContext("2d")
-   HEIGHT = 200
-   WIDTH = 600
+   intendedWidth = document.getElementById("visualizer-container").clientWidth
+   canvas.setAttribute("width", intendedWidth)
+   WIDTH = canvas.width
+   HEIGHT = canvas.height
    canvasCtx.clearRect(0, 0, WIDTH, HEIGHT)
   }
-  
+
+  //
+  //Visualizer animation
+  //
   function draw() {
     drawVisual = requestAnimationFrame(draw);
     analyser.getByteTimeDomainData(dataArray)
-    canvasCtx.fillStyle = "rgb(200, 200, 200)"
+    canvasCtx.fillStyle = "rgb(50, 50, 50)"
     canvasCtx.fillRect(0, 0, WIDTH, HEIGHT)
     canvasCtx.lineWidth = 2;
-    canvasCtx.strokeStyle = "rgb(0, 0, 0)";
+    canvasCtx.strokeStyle = "rgb(0, 200, 0)";
     canvasCtx.beginPath();
     sliceWidth = WIDTH / bufferLength;
     let x = 0;
@@ -79,8 +86,6 @@ const MIDIAccess = () => {
     canvasCtx.lineTo(WIDTH, HEIGHT / 2);
     canvasCtx.stroke();
   }
-
-
 
 
   //
@@ -118,8 +123,8 @@ const MIDIAccess = () => {
   //Select the waveform for the oscillator
   //
   function waveformSelect(num) { //sets c10 to change waveform
-    console.log(waveform) 
     waveform = waveforms[num]
+    console.log(num, `waveform: ${waveform}`)
   }
 
   function volumeController(velocity) {
