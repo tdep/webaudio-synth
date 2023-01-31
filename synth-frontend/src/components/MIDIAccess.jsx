@@ -151,7 +151,7 @@ const MIDIAccess = ({}) => {
     const command = input.data[0];
     const channel = input.data[1];
     const velocity = input.data[2]
-    // console.log(channel)
+    console.log(`channel:${channel}, command:${command}, velocity:${velocity}`)
     switch (command){
       case 145: // key press
       if (velocity > 0) {
