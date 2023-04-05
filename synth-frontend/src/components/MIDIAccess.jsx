@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 
 const MIDIAccess = ({}) => {
+  const [info, setInfo] = useState()
+  const [midiInfo, setMidiInfo] = useState()
   //
   //Get access to and initialize the AudioContext
   //
@@ -152,18 +154,20 @@ const MIDIAccess = ({}) => {
     const channel = input.data[1];
     const velocity = input.data[2]
     console.log(`channel:${channel}, command:${command}, velocity:${velocity}`)
+    setMidiInfo(`channel:${channel}, command:${command}, velocity:${velocity}`)
+
     switch (command){
-      case 145: // key press
+      case 144: // key press
       if (velocity > 0) {
         noteOn(channel, velocity);//note is on
       } else {
         noteOff(channel)//note is off
       }
       break;
-      case 129: // key release
+      case 128: // key release
         noteOff(channel)//note is off
         break;
-      case 177: //transport / modwheel / function knobs / volume 
+      case 176: //transport / modwheel / function knobs / volume 
         if (channel === 32) { // waveform selector => c10
           if (num < 4) {  // refer to waveforms array
             waveformSelect(num)
@@ -253,6 +257,7 @@ const MIDIAccess = ({}) => {
   function updateDevices(event) {
     // console.log(event);
     console.log(`Name: ${event.port.name}, Brand: ${event.port.manufacturer}, State: ${event.port.state}, Type: ${event.port.type}`)
+    setInfo(`Name: ${event.port.name}, Brand: ${event.port.manufacturer}, State: ${event.port.state}, Type: ${event.port.type}`)
   }
 
   //
@@ -261,6 +266,12 @@ const MIDIAccess = ({}) => {
   function failure() {
    console.log('Could not connect MIDI')
   }
+  return (
+    <div>
+      <p id="midi-device-info">{info}</p>
+      <p id="midi-event-info">{midiInfo}</p>
+    </div>
+  )
 }
 
 export default MIDIAccess
